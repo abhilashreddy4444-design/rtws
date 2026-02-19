@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Register</title>
+  <meta charset="UTF-8">
+  <title>Register - MyChatApp</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,20 +24,23 @@
 document.getElementById("registerForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
-  const res = await fetch("/register", {
+  const userData = {
+    username: document.getElementById("username").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    password: document.getElementById("password").value.trim()
+  };
+
+  const response = await fetch("/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: username.value,
-      email: email.value,
-      password: password.value
-    })
+    body: JSON.stringify(userData)
   });
 
-  const data = await res.json();
-  alert(data.message);
+  const result = await response.json();
 
-  if (data.success) {
+  alert(result.message);
+
+  if (result.success) {
     window.location.href = "login.html";
   }
 });
