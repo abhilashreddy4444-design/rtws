@@ -14,104 +14,9 @@ body {
   align-items: center;
 }
 
-/* ================= LANDING PAGE ================= */
-.landing-container {
-  background: white;
-  padding: 50px;
-  border-radius: 15px;
-  text-align: center;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-  width: 400px;
-}
-
-.landing-container h1 {
-  margin-bottom: 15px;
-}
-
-.subtitle {
-  margin-bottom: 25px;
-  color: #555;
-}
-
-.landing-buttons {
-  margin-top: 20px;
-}
-
-.btn {
-  display: block;
-  margin: 10px auto;
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  transition: 0.3s;
-  width: 70%;
-}
-
-.btn:hover {
-  background: #5563c1;
-}
-
-/* ================= TOP NAV (HOME BUTTON) ================= */
-.top-nav {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}
-
-.top-nav a {
-  background: #667eea;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.top-nav a:hover {
-  background: #5563c1;
-}
-
-/* ================= FORM PAGES ================= */
-.form-container {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 350px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-}
-
-.form-container h2 {
-  margin-bottom: 20px;
-}
-
-.form-container input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-
-.form-container button {
-  width: 100%;
-  padding: 10px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.form-container button:hover {
-  background: #5563c1;
-}
-
-/* ================= CHAT PAGE ================= */
+/* ================= CHAT CONTAINER ================= */
 .chat-container {
-  width: 400px;
+  width: 420px;
   height: 600px;
   background: white;
   border-radius: 15px;
@@ -121,14 +26,33 @@ body {
   overflow: hidden;
 }
 
+/* ================= HEADER ================= */
 .chat-header {
   background: #667eea;
   color: white;
   padding: 15px;
   text-align: center;
   font-weight: bold;
+  position: relative;
 }
 
+.logout-btn {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #f0f0f0;
+}
+
+/* ================= CHAT BOX ================= */
 .chat-box {
   flex: 1;
   padding: 15px;
@@ -143,6 +67,7 @@ body {
   margin-bottom: 10px;
   border-radius: 20px;
   max-width: 70%;
+  word-wrap: break-word;
 }
 
 .sent {
@@ -154,12 +79,15 @@ body {
 .received {
   align-self: flex-start;
   background: #e0e0e0;
+  color: black;
 }
 
+/* ================= INPUT AREA ================= */
 .chat-input {
   display: flex;
   padding: 10px;
   border-top: 1px solid #ddd;
+  background: white;
 }
 
 .chat-input input {
@@ -167,6 +95,7 @@ body {
   padding: 10px;
   border-radius: 20px;
   border: 1px solid #ccc;
+  outline: none;
 }
 
 .chat-input button {
