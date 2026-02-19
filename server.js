@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ===============================
 // TEMPORARY USER STORAGE
-// (Data resets if server restarts)
+// (Data resets when server restarts)
 // ===============================
 let users = [];
 
