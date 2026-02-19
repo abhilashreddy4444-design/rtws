@@ -1,27 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>MyChatApp</title>
+  <title>Chat Home</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="chat-container">
-    <div class="chat-header">
-      💬 MyChatApp
-    </div>
+<h2>Welcome to Chat</h2>
 
-    <div id="chat-box" class="chat-box"></div>
+<div id="chat-box" class="chat-box"></div>
 
-    <div class="chat-input">
-      <input id="message" type="text" placeholder="Type your message..." />
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
+<input id="message" type="text" placeholder="Type message">
+<button onclick="sendMessage()">Send</button>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+<br><br>
+<a href="about.html">About Us</a>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+
 </body>
 </html>
+
 
