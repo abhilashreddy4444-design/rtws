@@ -6,7 +6,7 @@
 }
 
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", sans-serif;
   background: linear-gradient(135deg, #667eea, #764ba2);
   min-height: 100vh;
   display: flex;
@@ -14,19 +14,77 @@ body {
   align-items: center;
 }
 
-/* ================= FORM CONTAINER ================= */
+/* ================= LANDING PAGE ================= */
+.landing-container {
+  background: white;
+  padding: 50px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  width: 400px;
+}
+
+.landing-container h1 {
+  margin-bottom: 15px;
+}
+
+.subtitle {
+  margin-bottom: 25px;
+  color: #555;
+}
+
+.landing-buttons {
+  margin-top: 20px;
+}
+
+.btn {
+  display: block;
+  margin: 10px auto;
+  padding: 10px 20px;
+  background: #667eea;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: 0.3s;
+  width: 70%;
+}
+
+.btn:hover {
+  background: #5563c1;
+}
+
+/* ================= TOP NAV (HOME BUTTON) ================= */
+.top-nav {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.top-nav a {
+  background: #667eea;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.top-nav a:hover {
+  background: #5563c1;
+}
+
+/* ================= FORM PAGES ================= */
 .form-container {
-  width: 350px;
   background: white;
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  width: 350px;
   text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
 .form-container h2 {
   margin-bottom: 20px;
-  color: #333;
 }
 
 .form-container input {
@@ -35,41 +93,20 @@ body {
   margin-bottom: 15px;
   border-radius: 8px;
   border: 1px solid #ccc;
-  font-size: 14px;
-  transition: 0.3s;
-}
-
-.form-container input:focus {
-  border-color: #667eea;
-  outline: none;
-  box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
 }
 
 .form-container button {
   width: 100%;
   padding: 10px;
-  border: none;
-  border-radius: 8px;
   background: #667eea;
   color: white;
-  font-size: 15px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: 0.3s;
 }
 
 .form-container button:hover {
   background: #5563c1;
-}
-
-.form-container p {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.form-container a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 500;
 }
 
 /* ================= CHAT PAGE ================= */
@@ -80,7 +117,7 @@ body {
   border-radius: 15px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
   overflow: hidden;
 }
 
@@ -89,7 +126,6 @@ body {
   color: white;
   padding: 15px;
   text-align: center;
-  font-size: 18px;
   font-weight: bold;
 }
 
@@ -107,8 +143,6 @@ body {
   margin-bottom: 10px;
   border-radius: 20px;
   max-width: 70%;
-  font-size: 14px;
-  word-wrap: break-word;
 }
 
 .sent {
@@ -120,14 +154,12 @@ body {
 .received {
   align-self: flex-start;
   background: #e0e0e0;
-  color: black;
 }
 
 .chat-input {
   display: flex;
   padding: 10px;
   border-top: 1px solid #ddd;
-  background: white;
 }
 
 .chat-input input {
@@ -135,61 +167,18 @@ body {
   padding: 10px;
   border-radius: 20px;
   border: 1px solid #ccc;
-  outline: none;
 }
 
 .chat-input button {
   margin-left: 10px;
   padding: 10px 15px;
-  border: none;
   border-radius: 20px;
+  border: none;
   background: #667eea;
   color: white;
   cursor: pointer;
-  transition: 0.3s;
 }
 
 .chat-input button:hover {
   background: #5563c1;
 }
-
-/* ================= ABOUT PAGE ================= */
-.about-container {
-  width: 400px;
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  text-align: center;
-}
-
-.about-container h2 {
-  margin-bottom: 15px;
-}
-
-.about-container p {
-  margin-bottom: 15px;
-  font-size: 14px;
-  color: #555;
-}
-
-.about-container a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 480px) {
-  .form-container,
-  .chat-container,
-  .about-container {
-    width: 95%;
-    height: auto;
-  }
-
-  .chat-container {
-    height: 90vh;
-  }
-}
-
