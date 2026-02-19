@@ -1,4 +1,4 @@
-
+/* ================= GLOBAL ================= */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -6,22 +6,81 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea, #764ba2);
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* ================= FORM CONTAINER ================= */
+.form-container {
+  width: 350px;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.form-container h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.form-container input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.form-container input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+}
+
+.form-container button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #667eea;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.form-container button:hover {
+  background: #5563c1;
+}
+
+.form-container p {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.form-container a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* ================= CHAT PAGE ================= */
 .chat-container {
   width: 400px;
   height: 600px;
   background: white;
-  border-radius: 12px;
+  border-radius: 15px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
@@ -39,32 +98,36 @@ body {
   padding: 15px;
   overflow-y: auto;
   background: #f4f6fb;
+  display: flex;
+  flex-direction: column;
 }
 
 .message {
+  padding: 8px 12px;
   margin-bottom: 10px;
-  padding: 10px 15px;
   border-radius: 20px;
   max-width: 70%;
   font-size: 14px;
+  word-wrap: break-word;
 }
 
 .sent {
+  align-self: flex-end;
   background: #667eea;
   color: white;
-  align-self: flex-end;
 }
 
 .received {
+  align-self: flex-start;
   background: #e0e0e0;
   color: black;
-  align-self: flex-start;
 }
 
 .chat-input {
   display: flex;
   padding: 10px;
   border-top: 1px solid #ddd;
+  background: white;
 }
 
 .chat-input input {
@@ -89,3 +152,44 @@ body {
 .chat-input button:hover {
   background: #5563c1;
 }
+
+/* ================= ABOUT PAGE ================= */
+.about-container {
+  width: 400px;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.about-container h2 {
+  margin-bottom: 15px;
+}
+
+.about-container p {
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #555;
+}
+
+.about-container a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 480px) {
+  .form-container,
+  .chat-container,
+  .about-container {
+    width: 95%;
+    height: auto;
+  }
+
+  .chat-container {
+    height: 90vh;
+  }
+}
+
