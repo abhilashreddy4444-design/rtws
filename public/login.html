@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Login - MyChatApp</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- Home Button Top-Right -->
+<!-- Home Button -->
 <div class="top-nav">
   <a href="index.html">Home</a>
 </div>
@@ -43,8 +42,11 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
   alert(result.message);
 
   if (result.success) {
-    window.location.href = "chat.html"; 
-    // change to index.html if chat is inside index
+    // Store login status
+    localStorage.setItem("loggedIn", "true");
+
+    // Redirect to chat page
+    window.location.href = "chat.html";
   }
 });
 </script>
