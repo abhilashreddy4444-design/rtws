@@ -12,11 +12,7 @@ function sendMessage() {
 
 socket.on("message", (msg) => {
   const chatBox = document.getElementById("chat-box");
-
-  const messageDiv = document.createElement("div");
-  messageDiv.classList.add("message", "received");
-  messageDiv.textContent = msg;
-
-  chatBox.appendChild(messageDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  const p = document.createElement("p");
+  p.textContent = msg;
+  chatBox.appendChild(p);
 });
