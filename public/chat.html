@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat - MyChatApp</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 🔒 LOGIN PROTECTION -->
+<script>
+if (localStorage.getItem("loggedIn") !== "true") {
+    window.location.href = "login.html";
+}
+</script>
+
+<div class="chat-container">
+
+  <div class="chat-header">
+    💬 Chat Room
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <div id="chat-box" class="chat-box"></div>
+
+  <div class="chat-input">
+    <input id="message" type="text" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+
+<script>
+function logout() {
+    localStorage.removeItem("loggedIn");
+    window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
