@@ -7,6 +7,11 @@
 </head>
 <body>
 
+<!-- Home Button Top-Right -->
+<div class="top-nav">
+  <a href="index.html">Home</a>
+</div>
+
 <div class="form-container">
   <h2>Login</h2>
 
@@ -35,11 +40,11 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
   });
 
   const result = await response.json();
-
   alert(result.message);
 
   if (result.success) {
-    window.location.href = "index.html";
+    window.location.href = "chat.html"; 
+    // change to index.html if chat is inside index
   }
 });
 </script>
