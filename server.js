@@ -7,40 +7,50 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-/* ===============================
-   FIX FOR "Cannot GET /"
-   =============================== */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-/* ===============================
-   Serve static frontend files
-   =============================== */
+app.use(express.json());
 app.use(express.static("public"));
 
-/* ===============================
-   Socket.IO real-time logic
-   =============================== */
+let users = [];
+
+/* ================= REGISTER ================= */
+app.post("/register", (req, res) => {
+  const { username, email, password } = req.body;
+
+  const userExists = users.find(user => user.email === email);
+
+  if (userExists) {
+    return res.json({ success: false, message: "User already exists!" });
+  }
+
+  users.push({ username, email, password });
+
+  res.json({ success: true, message: "Registration successful!" });
+});
+
+/* ================= LOGIN ================= */
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+
+  const user = users.find(
+    user => user.email === email && user.password === password
+  );
+
+  if (!user) {
+    return res.json({ success: false, message: "Invalid credentials!" });
+  }
+
+  res.json({ success: true, message: "Login successful!" });
+});
+
+/* ================= CHAT SOCKET ================= */
 io.on("connection", (socket) => {
-  console.log("User connected");
-
   socket.on("message", (msg) => {
-    // Send message to all users
     io.emit("message", msg);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
   });
 });
 
-/* ===============================
-   PORT for local + Render
-   =============================== */
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
