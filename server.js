@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -13,16 +12,12 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static("public"));
 
-// =====================
 // MongoDB Connection
-// =====================
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.log("❌ MongoDB Error:", err));
 
-// =====================
 // User Schema
-// =====================
 const userSchema = new mongoose.Schema({
   username: String,
   email: String,
@@ -31,16 +26,11 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-// =====================
-// REGISTER ROUTE
-// =====================
+// REGISTER
 app.post("/register", async (req, res) => {
-
   const { username, email, password } = req.body;
 
-  // Check if email already exists
   const existingUser = await User.findOne({ email });
-
   if (existingUser) {
     return res.json({
       success: false,
@@ -48,7 +38,6 @@ app.post("/register", async (req, res) => {
     });
   }
 
-  // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const newUser = new User({
@@ -65,11 +54,8 @@ app.post("/register", async (req, res) => {
   });
 });
 
-// =====================
-// LOGIN ROUTE
-// =====================
+// LOGIN
 app.post("/login", async (req, res) => {
-
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
@@ -97,17 +83,15 @@ app.post("/login", async (req, res) => {
   });
 });
 
-// =====================
-// SOCKET CHAT
-// =====================
+// CHAT
 io.on("connection", (socket) => {
   socket.on("message", (data) => {
     io.emit("message", data);
   });
 });
 
-// =====================
 const PORT = process.env.PORT || 3000;
+
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
