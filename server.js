@@ -1,88 +1,112 @@
 const express = require("express");
 const http = require("http");
-const path = require("path");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
-
-/* ===============================
-   CONNECT TO MONGODB
-================================= */
-
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch((err) => console.log("❌ MongoDB Error:", err));
-
-/* ===============================
-   CREATE CHAT SCHEMA
-================================= */
-
-const messageSchema = new mongoose.Schema({
-  username: String,
-  message: String,
-  time: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Message = mongoose.model("Message", messageSchema);
-
-/* ===============================
-   EXPRESS + SOCKET SETUP
-================================= */
+const bcrypt = require("bcryptjs");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Middleware
 app.use(express.json());
 app.use(express.static("public"));
 
-/* ===============================
-   FIX FOR "Cannot GET /"
-================================= */
+// =====================
+// MongoDB Connection
+// =====================
+mongoose.connect(process.env.MONGO_URI)
+.then(() => console.log("✅ MongoDB Connected"))
+.catch(err => console.log("❌ MongoDB Error:", err));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// =====================
+// User Schema
+// =====================
+const userSchema = new mongoose.Schema({
+  username: String,
+  email: String,
+  password: String
 });
 
-/* ===============================
-   SOCKET.IO LOGIC
-================================= */
+const User = mongoose.model("User", userSchema);
 
-io.on("connection", async (socket) => {
-  console.log("🟢 User connected");
+// =====================
+// REGISTER ROUTE
+// =====================
+app.post("/register", async (req, res) => {
 
-  // Load old messages from database
-  const oldMessages = await Message.find().sort({ time: 1 });
-  socket.emit("loadMessages", oldMessages);
+  const { username, email, password } = req.body;
 
-  // When new message received
-  socket.on("message", async (data) => {
+  // Check if email already exists
+  const existingUser = await User.findOne({ email });
 
-    // Save message to database
-    const newMessage = new Message({
-      username: data.username,
-      message: data.message
+  if (existingUser) {
+    return res.json({
+      success: false,
+      message: "User already exists!"
     });
+  }
 
-    await newMessage.save();
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Send message to all users
-    io.emit("message", newMessage);
+  const newUser = new User({
+    username,
+    email,
+    password: hashedPassword
   });
 
-  socket.on("disconnect", () => {
-    console.log("🔴 User disconnected");
+  await newUser.save();
+
+  res.json({
+    success: true,
+    message: "Registration successful!"
   });
 });
 
-/* ===============================
-   PORT FOR LOCAL + RENDER
-================================= */
+// =====================
+// LOGIN ROUTE
+// =====================
+app.post("/login", async (req, res) => {
 
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.json({
+      success: false,
+      message: "User not found!"
+    });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    return res.json({
+      success: false,
+      message: "Incorrect password!"
+    });
+  }
+
+  res.json({
+    success: true,
+    message: "Login successful!",
+    username: user.username
+  });
+});
+
+// =====================
+// SOCKET CHAT
+// =====================
+io.on("connection", (socket) => {
+  socket.on("message", (data) => {
+    io.emit("message", data);
+  });
+});
+
+// =====================
 const PORT = process.env.PORT || 3000;
-
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
