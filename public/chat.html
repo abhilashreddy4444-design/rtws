@@ -6,36 +6,63 @@
 </head>
 <body>
 
-<!-- 🔒 LOGIN PROTECTION -->
 <script>
-if (localStorage.getItem("loggedIn") !== "true") {
-    window.location.href = "login.html";
+const user = localStorage.getItem("user");
+
+if (!user) {
+  window.location.href = "login.html";
 }
 </script>
 
 <div class="chat-container">
 
   <div class="chat-header">
-    💬 Chat Room
+    💬 Chat Room - <span id="usernameDisplay"></span>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
   <div id="chat-box" class="chat-box"></div>
 
   <div class="chat-input">
-    <input id="message" type="text" placeholder="Type your message..." />
+    <input id="messageInput" type="text" placeholder="Type your message..." />
     <button onclick="sendMessage()">Send</button>
   </div>
 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="script.js"></script>
 
 <script>
+const socket = io();
+document.getElementById("usernameDisplay").innerText = user;
+
+function sendMessage() {
+  const messageInput = document.getElementById("messageInput");
+  const message = messageInput.value.trim();
+
+  if (message === "") return;
+
+  socket.emit("message", {
+    username: user,
+    message: message
+  });
+
+  messageInput.value = "";
+}
+
+socket.on("message", function(data) {
+  const chatBox = document.getElementById("chat-box");
+
+  const messageElement = document.createElement("p");
+  messageElement.innerHTML = "<strong>" + data.username + ":</strong> " + data.message;
+
+  chatBox.appendChild(messageElement);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
 function logout() {
-    localStorage.removeItem("loggedIn");
-    window.location.href = "index.html";
+  localStorage.removeItem("user");
+  window.location.href = "index.html";
 }
 </script>
 
