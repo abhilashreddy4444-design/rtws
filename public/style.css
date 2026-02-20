@@ -1,13 +1,54 @@
 body {
-  font-family: Arial;
-  text-align: center;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
 }
 
-#messages {
-  width: 300px;
-  height: 200px;
-  border: 1px solid black;
-  margin: auto;
-  overflow-y: scroll;
-  padding: 5px;
+/* Navbar */
+.navbar {
+    background-color: #1e3a8a;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-weight: bold;
+}
+
+.nav-links a:hover {
+    text-decoration: underline;
+}
+
+/* Home Section */
+.home {
+    text-align: center;
+    padding: 100px 20px;
+}
+
+.home h2 {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.home p {
+    font-size: 18px;
+    margin-bottom: 30px;
+}
+
+.btn {
+    background-color: #2563eb;
+    color: white;
+    padding: 10px 25px;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.btn:hover {
+    background-color: #1e40af;
 }
