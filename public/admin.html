@@ -2,27 +2,104 @@
 <html>
 <head>
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #44b314;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    #loginSection {
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    input {
+      padding: 8px;
+      width: 200px;
+    }
+
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #333;
+      color: white;
+    }
+
+    #dashboard {
+      display: none;
+    }
+  </style>
 </head>
 <body>
 
-<h2>🔥 Honeypot Admin Dashboard</h2>
+<h2>🔐 Admin Login</h2>
 
-<table border="1" id="attackTable">
-  <thead>
-    <tr>
-      <th>IP Address</th>
-      <th>URL</th>
-      <th>Type</th>
-      <th>Payload</th>
-      <th>Time</th>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+<div id="loginSection">
+  <input type="password" id="adminPass" placeholder="Enter Admin Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="dashboard">
+  <h2>🔥 Honeypot Attack Dashboard</h2>
+
+  <table id="attackTable">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>URL</th>
+        <th>Type</th>
+        <th>Payload</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 <script>
+async function login() {
+  const password = document.getElementById("adminPass").value;
+
+  const response = await fetch("/admin-login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ password })
+  });
+
+  const result = await response.json();
+
+  if (result.success) {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    loadAttacks();
+  } else {
+    alert("Wrong Password");
+  }
+}
+
 async function loadAttacks() {
   const response = await fetch("/admin-data");
   const data = await response.json();
@@ -43,8 +120,6 @@ async function loadAttacks() {
     tableBody.innerHTML += row;
   });
 }
-
-loadAttacks();
 </script>
 
 </body>
