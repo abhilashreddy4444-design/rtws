@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 // ==============================
-// 🔥 Attack Schema
+// Attack Schema
 // ==============================
 const attackSchema = new mongoose.Schema({
   ip: String,
@@ -49,7 +49,7 @@ const attackSchema = new mongoose.Schema({
 const Attack = mongoose.model("Attack", attackSchema);
 
 // ==============================
-// 🔥 Honeypot Logger
+// Honeypot Logger
 // ==============================
 async function logAttack(req, payload, type) {
   console.log("🔥 Attack detected!");
@@ -65,7 +65,7 @@ async function logAttack(req, payload, type) {
 }
 
 // ==============================
-// 🔥 REGISTER ROUTE
+// REGISTER ROUTE
 // ==============================
 app.post("/register", async (req, res) => {
 
@@ -106,7 +106,7 @@ app.post("/register", async (req, res) => {
 });
 
 // ==============================
-// 🔥 LOGIN ROUTE
+// LOGIN ROUTE
 // ==============================
 app.post("/login", async (req, res) => {
 
@@ -149,15 +149,20 @@ app.post("/login", async (req, res) => {
 });
 
 // ==============================
-// 🔥 Fake Admin Trap (Scanner Detection)
+// 🔐 ADMIN LOGIN ROUTE
 // ==============================
-app.get("/admin", async (req, res) => {
-  await logAttack(req, "Admin page accessed", "Admin Scan");
-  res.send("Unauthorized Access");
+app.post("/admin-login", (req, res) => {
+  const { password } = req.body;
+
+  if (password === process.env.ADMIN_PASSWORD) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
+  }
 });
 
 // ==============================
-// 🔥 ADMIN DASHBOARD API
+// 🔥 ADMIN DATA ROUTE
 // ==============================
 app.get("/admin-data", async (req, res) => {
   try {
@@ -169,7 +174,15 @@ app.get("/admin-data", async (req, res) => {
 });
 
 // ==============================
-// Chat (unchanged)
+// Fake Admin Trap (Scanner Detection)
+// ==============================
+app.get("/admin", async (req, res) => {
+  await logAttack(req, "Admin page accessed", "Admin Scan");
+  res.send("Unauthorized Access");
+});
+
+// ==============================
+// Chat Support
 // ==============================
 io.on("connection", (socket) => {
   socket.on("message", (data) => {
