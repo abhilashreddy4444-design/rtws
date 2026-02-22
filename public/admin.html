@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>🔥 Honeypot Admin Dashboard</h2>
+
+<table border="1" id="attackTable">
+  <thead>
+    <tr>
+      <th>IP Address</th>
+      <th>URL</th>
+      <th>Type</th>
+      <th>Payload</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<script>
+async function loadAttacks() {
+  const response = await fetch("/admin-data");
+  const data = await response.json();
+
+  const tableBody = document.querySelector("#attackTable tbody");
+  tableBody.innerHTML = "";
+
+  data.forEach(attack => {
+    const row = `
+      <tr>
+        <td>${attack.ip}</td>
+        <td>${attack.url}</td>
+        <td>${attack.type}</td>
+        <td>${attack.payload}</td>
+        <td>${new Date(attack.time).toLocaleString()}</td>
+      </tr>
+    `;
+    tableBody.innerHTML += row;
+  });
+}
+
+loadAttacks();
+</script>
+
+</body>
+</html>

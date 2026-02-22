@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Trust proxy (for Render real IP)
+// 🔥 Important for Render (real IP capture)
 app.set("trust proxy", true);
 
 // Middleware
@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 // ==============================
-// 🔥 NEW: Attack Schema
+// 🔥 Attack Schema
 // ==============================
 const attackSchema = new mongoose.Schema({
   ip: String,
@@ -49,10 +49,9 @@ const attackSchema = new mongoose.Schema({
 const Attack = mongoose.model("Attack", attackSchema);
 
 // ==============================
-// 🔥 Honeypot Logger (MongoDB)
+// 🔥 Honeypot Logger
 // ==============================
 async function logAttack(req, payload, type) {
-
   console.log("🔥 Attack detected!");
 
   const newAttack = new Attack({
@@ -150,11 +149,23 @@ app.post("/login", async (req, res) => {
 });
 
 // ==============================
-// 🔥 Fake Admin Trap
+// 🔥 Fake Admin Trap (Scanner Detection)
 // ==============================
 app.get("/admin", async (req, res) => {
   await logAttack(req, "Admin page accessed", "Admin Scan");
   res.send("Unauthorized Access");
+});
+
+// ==============================
+// 🔥 ADMIN DASHBOARD API
+// ==============================
+app.get("/admin-data", async (req, res) => {
+  try {
+    const attacks = await Attack.find().sort({ time: -1 });
+    res.json(attacks);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching data" });
+  }
 });
 
 // ==============================
