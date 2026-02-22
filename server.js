@@ -5,48 +5,17 @@ const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const fs = require("fs");
-const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Show Mongo URI (for debugging)
-console.log("MONGO_URI:", process.env.MONGO_URI);
-
-// Trust proxy (important for Render)
+// Trust proxy (for Render real IP)
 app.set("trust proxy", true);
 
 // Middleware
 app.use(express.json());
 app.use(express.static("public"));
-
-// ==============================
-// 🔥 Ensure Log File Exists
-// ==============================
-const logFilePath = path.join(__dirname, "attack_logs.txt");
-
-if (!fs.existsSync(logFilePath)) {
-  fs.writeFileSync(logFilePath, "=== Honeypot Attack Logs ===\n\n");
-}
-
-// ==============================
-// 🔥 Honeypot Logger Function
-// ==============================
-function logAttack(req, payload, type) {
-  const logEntry = `
-Time: ${new Date().toLocaleString()}
-IP: ${req.ip}
-URL: ${req.originalUrl}
-Type: ${type}
-Payload: ${payload}
-----------------------------------------
-`;
-
-  console.log("🔥 Attack detected!");
-  fs.appendFileSync(logFilePath, logEntry);
-}
 
 // ==============================
 // MongoDB Connection
@@ -67,6 +36,36 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 // ==============================
+// 🔥 NEW: Attack Schema
+// ==============================
+const attackSchema = new mongoose.Schema({
+  ip: String,
+  url: String,
+  type: String,
+  payload: String,
+  time: { type: Date, default: Date.now }
+});
+
+const Attack = mongoose.model("Attack", attackSchema);
+
+// ==============================
+// 🔥 Honeypot Logger (MongoDB)
+// ==============================
+async function logAttack(req, payload, type) {
+
+  console.log("🔥 Attack detected!");
+
+  const newAttack = new Attack({
+    ip: req.ip,
+    url: req.originalUrl,
+    type: type,
+    payload: payload
+  });
+
+  await newAttack.save();
+}
+
+// ==============================
 // 🔥 REGISTER ROUTE
 // ==============================
 app.post("/register", async (req, res) => {
@@ -78,7 +77,7 @@ app.post("/register", async (req, res) => {
     suspicious.test(req.body.email) ||
     suspicious.test(req.body.password)
   ) {
-    logAttack(
+    await logAttack(
       req,
       `${req.body.username} ${req.body.email} ${req.body.password}`,
       "SQLi/XSS Attempt (Register)"
@@ -118,7 +117,7 @@ app.post("/login", async (req, res) => {
     suspicious.test(req.body.email) ||
     suspicious.test(req.body.password)
   ) {
-    logAttack(
+    await logAttack(
       req,
       `${req.body.email} ${req.body.password}`,
       "SQLi/XSS Attempt (Login)"
@@ -132,14 +131,14 @@ app.post("/login", async (req, res) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    logAttack(req, email, "Invalid Email Attempt");
+    await logAttack(req, email, "Invalid Email Attempt");
     return res.json({ success: false, message: "Invalid credentials" });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    logAttack(req, `${email} ${password}`, "Brute Force Attempt");
+    await logAttack(req, `${email} ${password}`, "Brute Force Attempt");
     return res.json({ success: false, message: "Invalid credentials" });
   }
 
@@ -153,8 +152,8 @@ app.post("/login", async (req, res) => {
 // ==============================
 // 🔥 Fake Admin Trap
 // ==============================
-app.get("/admin", (req, res) => {
-  logAttack(req, "Admin page accessed", "Admin Scan");
+app.get("/admin", async (req, res) => {
+  await logAttack(req, "Admin page accessed", "Admin Scan");
   res.send("Unauthorized Access");
 });
 
@@ -167,7 +166,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// ==============================
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
