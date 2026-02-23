@@ -5,11 +5,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-<<<<<<< HEAD
-      background-color: #44b314;
-=======
       background-color: #f4f4f4;
->>>>>>> 95ca121 (Updated admin secure page)
       padding: 20px;
     }
 
@@ -24,7 +20,7 @@
 
     input {
       padding: 8px;
-      width: 200px;
+      width: 220px;
     }
 
     button {
@@ -32,10 +28,21 @@
       cursor: pointer;
     }
 
+    #dashboard {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .stats {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
       background: white;
     }
 
@@ -48,10 +55,6 @@
     th {
       background-color: #333;
       color: white;
-    }
-
-    #dashboard {
-      display: none;
     }
   </style>
 </head>
@@ -66,6 +69,12 @@
 
 <div id="dashboard">
   <h2>🔥 Honeypot Attack Dashboard</h2>
+
+  <div class="stats">
+    Total Attacks: <span id="total">0</span> |
+    SQLi/XSS: <span id="sql">0</span> |
+    Brute Force: <span id="brute">0</span>
+  </div>
 
   <table id="attackTable">
     <thead>
@@ -87,9 +96,7 @@ async function login() {
 
   const response = await fetch("/admin-login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password })
   });
 
@@ -108,10 +115,14 @@ async function loadAttacks() {
   const response = await fetch("/admin-data");
   const data = await response.json();
 
+  document.getElementById("total").innerText = data.total;
+  document.getElementById("sql").innerText = data.sqlCount;
+  document.getElementById("brute").innerText = data.bruteCount;
+
   const tableBody = document.querySelector("#attackTable tbody");
   tableBody.innerHTML = "";
 
-  data.forEach(attack => {
+  data.attacks.forEach(attack => {
     const row = `
       <tr>
         <td>${attack.ip}</td>
