@@ -71,9 +71,10 @@
   <h2>🔥 Honeypot Attack Dashboard</h2>
 
   <div class="stats">
-    Total Attacks: <span id="total">0</span> |
-    SQLi/XSS: <span id="sql">0</span> |
-    Brute Force: <span id="brute">0</span>
+    Total: <span id="total">0</span> |
+    SQL: <span id="sql">0</span> |
+    XSS: <span id="xss">0</span> |
+    Brute: <span id="brute">0</span>
   </div>
 
   <table id="attackTable">
@@ -117,6 +118,7 @@ async function loadAttacks() {
 
   document.getElementById("total").innerText = data.total;
   document.getElementById("sql").innerText = data.sqlCount;
+  document.getElementById("xss").innerText = data.xssCount;
   document.getElementById("brute").innerText = data.bruteCount;
 
   const tableBody = document.querySelector("#attackTable tbody");
