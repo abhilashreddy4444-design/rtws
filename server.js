@@ -10,21 +10,21 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 🔥 For Render real IP
+// Trust proxy for Render
 app.set("trust proxy", true);
 
 app.use(express.json());
 app.use(express.static("public"));
 
 // ==============================
-// MongoDB Connection
+// MongoDB
 // ==============================
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ MongoDB Error:", err));
 
 // ==============================
-// User Schema
+// Schemas
 // ==============================
 const userSchema = new mongoose.Schema({
   username: String,
@@ -32,11 +32,6 @@ const userSchema = new mongoose.Schema({
   password: String
 });
 
-const User = mongoose.model("User", userSchema);
-
-// ==============================
-// Attack Schema
-// ==============================
 const attackSchema = new mongoose.Schema({
   ip: String,
   url: String,
@@ -45,22 +40,29 @@ const attackSchema = new mongoose.Schema({
   time: { type: Date, default: Date.now }
 });
 
+const User = mongoose.model("User", userSchema);
 const Attack = mongoose.model("Attack", attackSchema);
+
+// ==============================
+// Attack Patterns
+// ==============================
+const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR '1'='1|;)/i;
+const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
+
+let loginAttempts = {};
 
 // ==============================
 // Honeypot Logger
 // ==============================
 async function logAttack(req, payload, type) {
-  console.log("🔥 Attack detected!");
-
   const newAttack = new Attack({
     ip: req.ip,
     url: req.originalUrl,
     type,
     payload
   });
-
   await newAttack.save();
+  console.log(`🔥 ${type} detected from ${req.ip}`);
 }
 
 // ==============================
@@ -68,22 +70,17 @@ async function logAttack(req, payload, type) {
 // ==============================
 app.post("/register", async (req, res) => {
 
-  const suspicious = /('|--|;|<script>|<\/script>|OR|AND|SELECT|DROP|INSERT)/i;
+  const { username, email, password } = req.body;
 
-  if (
-    suspicious.test(req.body.username) ||
-    suspicious.test(req.body.email) ||
-    suspicious.test(req.body.password)
-  ) {
-    await logAttack(
-      req,
-      `${req.body.username} ${req.body.email} ${req.body.password}`,
-      "SQLi/XSS Attempt (Register)"
-    );
+  if (sqlPattern.test(username) || sqlPattern.test(email) || sqlPattern.test(password)) {
+    await logAttack(req, JSON.stringify(req.body), "SQL Injection (Register)");
     return res.json({ success: false, message: "Invalid input detected" });
   }
 
-  const { username, email, password } = req.body;
+  if (xssPattern.test(username) || xssPattern.test(email)) {
+    await logAttack(req, JSON.stringify(req.body), "XSS Attack (Register)");
+    return res.json({ success: false, message: "Invalid input detected" });
+  }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -91,7 +88,6 @@ app.post("/register", async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-
   await new User({ username, email, password: hashedPassword }).save();
 
   res.json({ success: true, message: "Registration successful!" });
@@ -102,21 +98,17 @@ app.post("/register", async (req, res) => {
 // ==============================
 app.post("/login", async (req, res) => {
 
-  const suspicious = /('|--|;|<script>|<\/script>|OR|AND|SELECT|DROP|INSERT)/i;
+  const { email, password } = req.body;
 
-  if (
-    suspicious.test(req.body.email) ||
-    suspicious.test(req.body.password)
-  ) {
-    await logAttack(
-      req,
-      `${req.body.email} ${req.body.password}`,
-      "SQLi/XSS Attempt (Login)"
-    );
+  if (sqlPattern.test(email) || sqlPattern.test(password)) {
+    await logAttack(req, JSON.stringify(req.body), "SQL Injection (Login)");
     return res.json({ success: false, message: "Invalid credentials" });
   }
 
-  const { email, password } = req.body;
+  if (xssPattern.test(email)) {
+    await logAttack(req, JSON.stringify(req.body), "XSS Attack (Login)");
+    return res.json({ success: false, message: "Invalid credentials" });
+  }
 
   const user = await User.findOne({ email });
 
@@ -128,9 +120,18 @@ app.post("/login", async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    await logAttack(req, `${email} ${password}`, "Brute Force Attempt");
+    const ip = req.ip;
+
+    loginAttempts[ip] = (loginAttempts[ip] || 0) + 1;
+
+    if (loginAttempts[ip] >= 3) {
+      await logAttack(req, email, "Brute Force Attack (3+ attempts)");
+    }
+
     return res.json({ success: false, message: "Invalid credentials" });
   }
+
+  loginAttempts[req.ip] = 0;
 
   res.json({ success: true, message: "Login successful!", username: user.username });
 });
@@ -139,36 +140,20 @@ app.post("/login", async (req, res) => {
 // ADMIN LOGIN
 // ==============================
 app.post("/admin-login", (req, res) => {
-  const { password } = req.body;
-
-  if (password === process.env.ADMIN_PASSWORD) {
-    res.json({ success: true });
-  } else {
-    res.json({ success: false });
-  }
+  res.json({ success: req.body.password === process.env.ADMIN_PASSWORD });
 });
 
 // ==============================
-// ADMIN DATA WITH STATISTICS
+// ADMIN DATA
 // ==============================
 app.get("/admin-data", async (req, res) => {
-  try {
-    const attacks = await Attack.find().sort({ time: -1 });
+  const attacks = await Attack.find().sort({ time: -1 });
 
-    const total = attacks.length;
-    const sqlCount = attacks.filter(a => a.type.includes("SQLi")).length;
-    const bruteCount = attacks.filter(a => a.type.includes("Brute")).length;
+  const total = attacks.length;
+  const sqlCount = attacks.filter(a => a.type.includes("SQL")).length;
+  const bruteCount = attacks.filter(a => a.type.includes("Brute")).length;
 
-    res.json({
-      total,
-      sqlCount,
-      bruteCount,
-      attacks
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching data" });
-  }
+  res.json({ total, sqlCount, bruteCount, attacks });
 });
 
 // ==============================

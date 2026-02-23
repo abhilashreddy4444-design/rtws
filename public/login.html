@@ -13,10 +13,10 @@
 <div class="form-container">
   <h2>Welcome Back 👋</h2>
 
-  <!-- 🔥 novalidate disables browser email validation -->
+  <!-- novalidate disables browser auto validation -->
   <form id="loginForm" novalidate>
 
-    <!-- 🔥 Changed from type="email" to type="text" -->
+    <!-- text instead of email to allow honeypot detection -->
     <input type="text" id="email" placeholder="Enter Email" required>
 
     <input type="password" id="password" placeholder="Enter Password" required>
@@ -36,18 +36,24 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
     password: document.getElementById("password").value.trim()
   };
 
-  const response = await fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(loginData)
-  });
+  try {
+    const response = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(loginData)
+    });
 
-  const result = await response.json();
-  alert(result.message);
+    const result = await response.json();
 
-  if (result.success) {
-    localStorage.setItem("user", result.username);
-    window.location.href = "chat.html";
+    alert(result.message);
+
+    if (result.success) {
+      localStorage.setItem("user", result.username);
+      window.location.href = "chat.html";
+    }
+
+  } catch (error) {
+    alert("Server error. Please try again.");
   }
 });
 </script>
