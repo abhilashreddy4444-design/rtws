@@ -144,16 +144,37 @@ app.post("/admin-login", (req, res) => {
 });
 
 // ==============================
-// ADMIN DATA
+// ADMIN DATA (SEPARATED COUNTS)
 // ==============================
 app.get("/admin-data", async (req, res) => {
-  const attacks = await Attack.find().sort({ time: -1 });
+  try {
+    const attacks = await Attack.find().sort({ time: -1 });
 
-  const total = attacks.length;
-  const sqlCount = attacks.filter(a => a.type.includes("SQL")).length;
-  const bruteCount = attacks.filter(a => a.type.includes("Brute")).length;
+    const total = attacks.length;
 
-  res.json({ total, sqlCount, bruteCount, attacks });
+    const sqlCount = attacks.filter(a =>
+      a.type.includes("SQL Injection")
+    ).length;
+
+    const xssCount = attacks.filter(a =>
+      a.type.includes("XSS Attack")
+    ).length;
+
+    const bruteCount = attacks.filter(a =>
+      a.type.includes("Brute Force")
+    ).length;
+
+    res.json({
+      total,
+      sqlCount,
+      xssCount,
+      bruteCount,
+      attacks
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching data" });
+  }
 });
 
 // ==============================
