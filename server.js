@@ -10,10 +10,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 🔥 Important for Render (real IP capture)
+// 🔥 For Render real IP
 app.set("trust proxy", true);
 
-// Middleware
 app.use(express.json());
 app.use(express.static("public"));
 
@@ -57,15 +56,15 @@ async function logAttack(req, payload, type) {
   const newAttack = new Attack({
     ip: req.ip,
     url: req.originalUrl,
-    type: type,
-    payload: payload
+    type,
+    payload
   });
 
   await newAttack.save();
 }
 
 // ==============================
-// REGISTER ROUTE
+// REGISTER
 // ==============================
 app.post("/register", async (req, res) => {
 
@@ -81,7 +80,6 @@ app.post("/register", async (req, res) => {
       `${req.body.username} ${req.body.email} ${req.body.password}`,
       "SQLi/XSS Attempt (Register)"
     );
-
     return res.json({ success: false, message: "Invalid input detected" });
   }
 
@@ -94,19 +92,13 @@ app.post("/register", async (req, res) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const newUser = new User({
-    username,
-    email,
-    password: hashedPassword
-  });
-
-  await newUser.save();
+  await new User({ username, email, password: hashedPassword }).save();
 
   res.json({ success: true, message: "Registration successful!" });
 });
 
 // ==============================
-// LOGIN ROUTE
+// LOGIN
 // ==============================
 app.post("/login", async (req, res) => {
 
@@ -121,7 +113,6 @@ app.post("/login", async (req, res) => {
       `${req.body.email} ${req.body.password}`,
       "SQLi/XSS Attempt (Login)"
     );
-
     return res.json({ success: false, message: "Invalid credentials" });
   }
 
@@ -141,15 +132,11 @@ app.post("/login", async (req, res) => {
     return res.json({ success: false, message: "Invalid credentials" });
   }
 
-  res.json({
-    success: true,
-    message: "Login successful!",
-    username: user.username
-  });
+  res.json({ success: true, message: "Login successful!", username: user.username });
 });
 
 // ==============================
-// 🔐 ADMIN LOGIN ROUTE
+// ADMIN LOGIN
 // ==============================
 app.post("/admin-login", (req, res) => {
   const { password } = req.body;
@@ -162,19 +149,30 @@ app.post("/admin-login", (req, res) => {
 });
 
 // ==============================
-// 🔥 ADMIN DATA ROUTE
+// ADMIN DATA WITH STATISTICS
 // ==============================
 app.get("/admin-data", async (req, res) => {
   try {
     const attacks = await Attack.find().sort({ time: -1 });
-    res.json(attacks);
+
+    const total = attacks.length;
+    const sqlCount = attacks.filter(a => a.type.includes("SQLi")).length;
+    const bruteCount = attacks.filter(a => a.type.includes("Brute")).length;
+
+    res.json({
+      total,
+      sqlCount,
+      bruteCount,
+      attacks
+    });
+
   } catch (err) {
     res.status(500).json({ message: "Error fetching data" });
   }
 });
 
 // ==============================
-// Fake Admin Trap (Scanner Detection)
+// Fake Admin Trap
 // ==============================
 app.get("/admin", async (req, res) => {
   await logAttack(req, "Admin page accessed", "Admin Scan");
@@ -182,7 +180,7 @@ app.get("/admin", async (req, res) => {
 });
 
 // ==============================
-// Chat Support
+// Chat
 // ==============================
 io.on("connection", (socket) => {
   socket.on("message", (data) => {
