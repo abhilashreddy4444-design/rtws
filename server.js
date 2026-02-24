@@ -21,8 +21,8 @@ app.use(express.static("public"));
 // DDoS Detection System
 // ==============================
 let requestTracker = {};
-const REQUEST_LIMIT = 50;
-const TIME_WINDOW = 10 * 1000;
+const REQUEST_LIMIT = 10;
+const TIME_WINDOW = 10 * 1000;  
 
 app.use((req, res, next) => {
   const ip = req.ip;
