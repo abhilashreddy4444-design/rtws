@@ -7,10 +7,12 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "express": "^4.19.2",
     "mongoose": "^9.2.1",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "ua-parser-js": "^2.0.9"
   }
 }

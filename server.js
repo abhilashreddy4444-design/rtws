@@ -5,12 +5,13 @@ const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const UAParser = require("ua-parser-js");
+const axios = require("axios");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Trust proxy for Render
 app.set("trust proxy", true);
 
 app.use(express.json());
@@ -37,8 +38,12 @@ const attackSchema = new mongoose.Schema({
   url: String,
   type: String,
   payload: String,
+  browser: String,
+  os: String,
+  device: String,
+  country: String,
   time: { type: Date, default: Date.now }
-});
+}, { versionKey: false });
 
 const User = mongoose.model("User", userSchema);
 const Attack = mongoose.model("Attack", attackSchema);
@@ -46,23 +51,46 @@ const Attack = mongoose.model("Attack", attackSchema);
 // ==============================
 // Attack Patterns
 // ==============================
-const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR '1'='1|;)/i;
+const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR 1=1|;)/i;
 const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
 
 let loginAttempts = {};
 
 // ==============================
-// Honeypot Logger
+// Professional Honeypot Logger
 // ==============================
 async function logAttack(req, payload, type) {
+
+  const userAgent = req.headers["user-agent"];
+  const parser = new UAParser(userAgent);
+  const ua = parser.getResult();
+
+  const browser = ua.browser.name || "Unknown";
+  const os = ua.os.name || "Unknown";
+  const device = ua.device.type === "mobile" ? "Mobile" : "Desktop";
+
+  let country = "Unknown";
+
+  try {
+    const response = await axios.get(`http://ip-api.com/json/${req.ip}`);
+    country = response.data.country || "Unknown";
+  } catch (err) {
+    console.log("IP lookup failed");
+  }
+
   const newAttack = new Attack({
     ip: req.ip,
     url: req.originalUrl,
     type,
-    payload
+    payload,
+    browser,
+    os,
+    device,
+    country
   });
+
   await newAttack.save();
-  console.log(`🔥 ${type} detected from ${req.ip}`);
+  console.log(`🔥 ${type} | ${browser} | ${os} | ${device} | ${country}`);
 }
 
 // ==============================
@@ -120,11 +148,9 @@ app.post("/login", async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    const ip = req.ip;
+    loginAttempts[req.ip] = (loginAttempts[req.ip] || 0) + 1;
 
-    loginAttempts[ip] = (loginAttempts[ip] || 0) + 1;
-
-    if (loginAttempts[ip] >= 3) {
+    if (loginAttempts[req.ip] >= 3) {
       await logAttack(req, email, "Brute Force Attack (3+ attempts)");
     }
 
@@ -144,54 +170,18 @@ app.post("/admin-login", (req, res) => {
 });
 
 // ==============================
-// ADMIN DATA (SEPARATED COUNTS)
+// ADMIN DATA
 // ==============================
 app.get("/admin-data", async (req, res) => {
-  try {
-    const attacks = await Attack.find().sort({ time: -1 });
 
-    const total = attacks.length;
+  const attacks = await Attack.find().sort({ time: -1 });
 
-    const sqlCount = attacks.filter(a =>
-      a.type.includes("SQL Injection")
-    ).length;
+  const total = attacks.length;
+  const sqlCount = attacks.filter(a => a.type.includes("SQL Injection")).length;
+  const xssCount = attacks.filter(a => a.type.includes("XSS Attack")).length;
+  const bruteCount = attacks.filter(a => a.type.includes("Brute Force")).length;
 
-    const xssCount = attacks.filter(a =>
-      a.type.includes("XSS Attack")
-    ).length;
-
-    const bruteCount = attacks.filter(a =>
-      a.type.includes("Brute Force")
-    ).length;
-
-    res.json({
-      total,
-      sqlCount,
-      xssCount,
-      bruteCount,
-      attacks
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching data" });
-  }
-});
-
-// ==============================
-// Fake Admin Trap
-// ==============================
-app.get("/admin", async (req, res) => {
-  await logAttack(req, "Admin page accessed", "Admin Scan");
-  res.send("Unauthorized Access");
-});
-
-// ==============================
-// Chat
-// ==============================
-io.on("connection", (socket) => {
-  socket.on("message", (data) => {
-    io.emit("message", data);
-  });
+  res.json({ total, sqlCount, xssCount, bruteCount, attacks });
 });
 
 const PORT = process.env.PORT || 3000;
