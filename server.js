@@ -22,7 +22,7 @@ app.use(express.static("public"));
 // ==============================
 let requestTracker = {};
 const REQUEST_LIMIT = 10;
-const TIME_WINDOW = 10 * 1000;  
+const TIME_WINDOW = 10 * 1000;
 
 app.use((req, res, next) => {
   const ip = req.ip;
@@ -71,7 +71,9 @@ const attackSchema = new mongoose.Schema({
   type: String,
   payload: String,
   browser: String,
+  browserVersion: String,   // ✅ NEW
   os: String,
+  osVersion: String,        // ✅ NEW
   device: String,
   country: String,
   time: { type: Date, default: Date.now }
@@ -96,7 +98,11 @@ async function logAttack(req, payload, type) {
   const ua = parser.getResult();
 
   const browser = ua.browser.name || "Unknown";
+  const browserVersion = ua.browser.version || "Unknown"; // ✅ NEW
+
   const os = ua.os.name || "Unknown";
+  const osVersion = ua.os.version || "Unknown"; // ✅ NEW
+
   const device = ua.device.type === "mobile" ? "Mobile" : "Desktop";
 
   let country = "Unknown";
@@ -112,7 +118,9 @@ async function logAttack(req, payload, type) {
     type,
     payload,
     browser,
+    browserVersion,   // ✅ SAVED
     os,
+    osVersion,        // ✅ SAVED
     device,
     country
   }).save();
