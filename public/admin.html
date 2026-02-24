@@ -11,7 +11,7 @@
     #dashboard { display:none; margin-top:20px; }
     .stats { text-align:center; font-weight:bold; margin-bottom:20px; font-size:18px; }
     table { width:100%; border-collapse:collapse; background:white; }
-    th, td { padding:10px; border:1px solid #ccc; text-align:center; }
+    th, td { padding:8px; border:1px solid #ccc; text-align:center; font-size:13px; }
     th { background:#333; color:white; }
   </style>
 </head>
@@ -32,10 +32,11 @@
     SQL: <span id="sql">0</span> |
     XSS: <span id="xss">0</span> |
     Brute: <span id="brute">0</span> |
-    Admin Scan: <span id="adminScan">0</span>
+    Admin Scan: <span id="adminScan">0</span> |
+    DDoS: <span id="ddos">0</span>
   </div>
 
-  <table id="attackTable">
+  <table>
     <thead>
       <tr>
         <th>IP</th>
@@ -49,7 +50,7 @@
         <th>Time</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="tbody"></tbody>
   </table>
 </div>
 
@@ -57,51 +58,50 @@
 async function login() {
   const password = document.getElementById("adminPass").value;
 
-  const response = await fetch("/admin-login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password })
+  const res = await fetch("/admin-login", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ password })
   });
 
-  const result = await response.json();
+  const result = await res.json();
 
-  if (result.success) {
-    document.getElementById("loginSection").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
+  if(result.success){
+    document.getElementById("loginSection").style.display="none";
+    document.getElementById("dashboard").style.display="block";
     loadAttacks();
   } else {
     alert("Wrong Password");
   }
 }
 
-async function loadAttacks() {
-  const response = await fetch("/admin-data");
-  const data = await response.json();
+async function loadAttacks(){
+  const res = await fetch("/admin-data");
+  const data = await res.json();
 
   document.getElementById("total").innerText = data.total;
   document.getElementById("sql").innerText = data.sqlCount;
   document.getElementById("xss").innerText = data.xssCount;
   document.getElementById("brute").innerText = data.bruteCount;
   document.getElementById("adminScan").innerText = data.adminScanCount;
+  document.getElementById("ddos").innerText = data.ddosCount;
 
-  const tableBody = document.querySelector("#attackTable tbody");
-  tableBody.innerHTML = "";
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML="";
 
-  data.attacks.forEach(attack => {
-    const row = `
+  data.attacks.forEach(a=>{
+    tbody.innerHTML += `
       <tr>
-        <td>${attack.ip}</td>
-        <td>${attack.country || "Unknown"}</td>
-        <td>${attack.browser || "Unknown"}</td>
-        <td>${attack.os || "Unknown"}</td>
-        <td>${attack.device || "Desktop"}</td>
-        <td>${attack.url}</td>
-        <td>${attack.type}</td>
-        <td>${attack.payload}</td>
-        <td>${new Date(attack.time).toLocaleString()}</td>
-      </tr>
-    `;
-    tableBody.innerHTML += row;
+        <td>${a.ip}</td>
+        <td>${a.country || "Unknown"}</td>
+        <td>${a.browser || "Unknown"}</td>
+        <td>${a.os || "Unknown"}</td>
+        <td>${a.device || "Desktop"}</td>
+        <td>${a.url}</td>
+        <td>${a.type}</td>
+        <td>${a.payload}</td>
+        <td>${new Date(a.time).toLocaleString()}</td>
+      </tr>`;
   });
 }
 </script>
