@@ -85,17 +85,19 @@ const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' O
 const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
 
 // ==============================
-// Brute Force Settings
+// Brute Force Protection
 // ==============================
 let loginAttempts = {};
 const BRUTE_LIMIT = 3;
-const BRUTE_WINDOW = 60 * 1000; // 1 minute
+const BRUTE_WINDOW = 60 * 1000;
 
 // ==============================
-// Logger
+// Logger (Improved Version Detection)
 // ==============================
 async function logAttack(req, payload, type) {
-  const parser = new UAParser(req.headers["user-agent"]);
+
+  const rawUA = req.headers["user-agent"] || "";
+  const parser = new UAParser(rawUA);
   const ua = parser.getResult();
 
   const browser = ua.browser.name || "Unknown";
@@ -128,43 +130,14 @@ async function logAttack(req, payload, type) {
 }
 
 // ==============================
-// REGISTER
-// ==============================
-app.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
-
-  if (sqlPattern.test(username) || sqlPattern.test(email) || sqlPattern.test(password)) {
-    await logAttack(req, JSON.stringify(req.body), "SQL Injection (Register)");
-    return res.json({ success: false });
-  }
-
-  if (xssPattern.test(username) || xssPattern.test(email)) {
-    await logAttack(req, JSON.stringify(req.body), "XSS Attack (Register)");
-    return res.json({ success: false });
-  }
-
-  const existingUser = await User.findOne({ email });
-  if (existingUser) return res.json({ success: false });
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  await new User({ username, email, password: hashedPassword }).save();
-
-  res.json({ success: true });
-});
-
-// ==============================
 // LOGIN
 // ==============================
 app.post("/login", async (req, res) => {
+
   const { email, password } = req.body;
 
   if (sqlPattern.test(email) || sqlPattern.test(password)) {
     await logAttack(req, JSON.stringify(req.body), "SQL Injection (Login)");
-    return res.json({ success: false });
-  }
-
-  if (xssPattern.test(email)) {
-    await logAttack(req, JSON.stringify(req.body), "XSS Attack (Login)");
     return res.json({ success: false });
   }
 
@@ -178,6 +151,7 @@ app.post("/login", async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
+
     const key = req.ip + "_" + email;
     const now = Date.now();
 
@@ -198,28 +172,9 @@ app.post("/login", async (req, res) => {
     return res.json({ success: false });
   }
 
-  // Reset on successful login
   delete loginAttempts[req.ip + "_" + email];
 
   res.json({ success: true, username: user.username });
-});
-
-// ==============================
-// Admin Scan Trap
-// ==============================
-app.get(
-  ["/admin", "/admin/login", "/phpmyadmin", "/wp-admin", "/.env", "/config", "/backup.zip"],
-  async (req, res) => {
-    await logAttack(req, req.originalUrl, "Admin Scan Attack");
-    res.status(404).send("Not Found");
-  }
-);
-
-// ==============================
-// ADMIN LOGIN
-// ==============================
-app.post("/admin-login", (req, res) => {
-  res.json({ success: req.body.password === process.env.ADMIN_PASSWORD });
 });
 
 // ==============================
