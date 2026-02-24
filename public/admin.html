@@ -3,59 +3,16 @@
 <head>
   <title>Admin Dashboard</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      padding: 20px;
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    #loginSection {
-      text-align: center;
-      margin-top: 50px;
-    }
-
-    input {
-      padding: 8px;
-      width: 220px;
-    }
-
-    button {
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-
-    #dashboard {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .stats {
-      text-align: center;
-      margin-bottom: 20px;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-    }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: center;
-    }
-
-    th {
-      background-color: #333;
-      color: white;
-    }
+    body { font-family: Arial; background:#f4f4f4; padding:20px; }
+    h2 { text-align:center; }
+    #loginSection { text-align:center; margin-top:50px; }
+    input { padding:8px; width:220px; }
+    button { padding:8px 12px; cursor:pointer; }
+    #dashboard { display:none; margin-top:20px; }
+    .stats { text-align:center; font-weight:bold; margin-bottom:20px; font-size:18px; }
+    table { width:100%; border-collapse:collapse; background:white; }
+    th, td { padding:10px; border:1px solid #ccc; text-align:center; }
+    th { background:#333; color:white; }
   </style>
 </head>
 <body>
@@ -77,17 +34,21 @@
     Brute: <span id="brute">0</span>
   </div>
 
-  <table id="attackTable">
+  <table>
     <thead>
       <tr>
-        <th>IP Address</th>
+        <th>IP</th>
+        <th>Country</th>
+        <th>Browser</th>
+        <th>OS</th>
+        <th>Device</th>
         <th>URL</th>
         <th>Type</th>
         <th>Payload</th>
         <th>Time</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="tbody"></tbody>
   </table>
 </div>
 
@@ -95,46 +56,48 @@
 async function login() {
   const password = document.getElementById("adminPass").value;
 
-  const response = await fetch("/admin-login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password })
+  const res = await fetch("/admin-login", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ password })
   });
 
-  const result = await response.json();
+  const result = await res.json();
 
-  if (result.success) {
-    document.getElementById("loginSection").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
+  if(result.success){
+    document.getElementById("loginSection").style.display="none";
+    document.getElementById("dashboard").style.display="block";
     loadAttacks();
   } else {
     alert("Wrong Password");
   }
 }
 
-async function loadAttacks() {
-  const response = await fetch("/admin-data");
-  const data = await response.json();
+async function loadAttacks(){
+  const res = await fetch("/admin-data");
+  const data = await res.json();
 
   document.getElementById("total").innerText = data.total;
   document.getElementById("sql").innerText = data.sqlCount;
   document.getElementById("xss").innerText = data.xssCount;
   document.getElementById("brute").innerText = data.bruteCount;
 
-  const tableBody = document.querySelector("#attackTable tbody");
-  tableBody.innerHTML = "";
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML="";
 
-  data.attacks.forEach(attack => {
-    const row = `
+  data.attacks.forEach(a=>{
+    tbody.innerHTML += `
       <tr>
-        <td>${attack.ip}</td>
-        <td>${attack.url}</td>
-        <td>${attack.type}</td>
-        <td>${attack.payload}</td>
-        <td>${new Date(attack.time).toLocaleString()}</td>
-      </tr>
-    `;
-    tableBody.innerHTML += row;
+        <td>${a.ip}</td>
+        <td>${a.country || "Unknown"}</td>
+        <td>${a.browser || "Unknown"}</td>
+        <td>${a.os || "Unknown"}</td>
+        <td>${a.device || "Desktop"}</td>
+        <td>${a.url}</td>
+        <td>${a.type}</td>
+        <td>${a.payload}</td>
+        <td>${new Date(a.time).toLocaleString()}</td>
+      </tr>`;
   });
 }
 </script>
