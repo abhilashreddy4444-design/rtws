@@ -18,6 +18,38 @@ app.use(express.json());
 app.use(express.static("public"));
 
 // ==============================
+// DDoS Detection System
+// ==============================
+let requestTracker = {};
+const REQUEST_LIMIT = 50;
+const TIME_WINDOW = 10 * 1000;
+
+app.use((req, res, next) => {
+  const ip = req.ip;
+  const now = Date.now();
+
+  if (!requestTracker[ip]) {
+    requestTracker[ip] = [];
+  }
+
+  requestTracker[ip] = requestTracker[ip].filter(
+    timestamp => now - timestamp < TIME_WINDOW
+  );
+
+  requestTracker[ip].push(now);
+
+  if (requestTracker[ip].length > REQUEST_LIMIT) {
+    logAttack(req, "High request rate detected", "DDoS Attack");
+    return res.status(429).json({
+      success: false,
+      message: "Too many requests. Possible DDoS detected."
+    });
+  }
+
+  next();
+});
+
+// ==============================
 // MongoDB
 // ==============================
 mongoose.connect(process.env.MONGO_URI)
@@ -49,7 +81,7 @@ const User = mongoose.model("User", userSchema);
 const Attack = mongoose.model("Attack", attackSchema);
 
 // ==============================
-// Attack Patterns
+// Patterns
 // ==============================
 const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR 1=1|;)/i;
 const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
@@ -57,12 +89,10 @@ const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
 let loginAttempts = {};
 
 // ==============================
-// Professional Honeypot Logger
+// Logger
 // ==============================
 async function logAttack(req, payload, type) {
-
-  const userAgent = req.headers["user-agent"];
-  const parser = new UAParser(userAgent);
+  const parser = new UAParser(req.headers["user-agent"]);
   const ua = parser.getResult();
 
   const browser = ua.browser.name || "Unknown";
@@ -74,11 +104,9 @@ async function logAttack(req, payload, type) {
   try {
     const response = await axios.get(`http://ip-api.com/json/${req.ip}`);
     country = response.data.country || "Unknown";
-  } catch (err) {
-    console.log("IP lookup failed");
-  }
+  } catch {}
 
-  const newAttack = new Attack({
+  await new Attack({
     ip: req.ip,
     url: req.originalUrl,
     type,
@@ -87,62 +115,55 @@ async function logAttack(req, payload, type) {
     os,
     device,
     country
-  });
-
-  await newAttack.save();
-  console.log(`🔥 ${type} | ${browser} | ${os} | ${device} | ${country}`);
+  }).save();
 }
 
 // ==============================
 // REGISTER
 // ==============================
 app.post("/register", async (req, res) => {
-
   const { username, email, password } = req.body;
 
   if (sqlPattern.test(username) || sqlPattern.test(email) || sqlPattern.test(password)) {
     await logAttack(req, JSON.stringify(req.body), "SQL Injection (Register)");
-    return res.json({ success: false, message: "Invalid input detected" });
+    return res.json({ success: false });
   }
 
   if (xssPattern.test(username) || xssPattern.test(email)) {
     await logAttack(req, JSON.stringify(req.body), "XSS Attack (Register)");
-    return res.json({ success: false, message: "Invalid input detected" });
+    return res.json({ success: false });
   }
 
   const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    return res.json({ success: false, message: "User already exists!" });
-  }
+  if (existingUser) return res.json({ success: false });
 
   const hashedPassword = await bcrypt.hash(password, 10);
   await new User({ username, email, password: hashedPassword }).save();
 
-  res.json({ success: true, message: "Registration successful!" });
+  res.json({ success: true });
 });
 
 // ==============================
 // LOGIN
 // ==============================
 app.post("/login", async (req, res) => {
-
   const { email, password } = req.body;
 
   if (sqlPattern.test(email) || sqlPattern.test(password)) {
     await logAttack(req, JSON.stringify(req.body), "SQL Injection (Login)");
-    return res.json({ success: false, message: "Invalid credentials" });
+    return res.json({ success: false });
   }
 
   if (xssPattern.test(email)) {
     await logAttack(req, JSON.stringify(req.body), "XSS Attack (Login)");
-    return res.json({ success: false, message: "Invalid credentials" });
+    return res.json({ success: false });
   }
 
   const user = await User.findOne({ email });
 
   if (!user) {
     await logAttack(req, email, "Invalid Email Attempt");
-    return res.json({ success: false, message: "Invalid credentials" });
+    return res.json({ success: false });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -151,19 +172,18 @@ app.post("/login", async (req, res) => {
     loginAttempts[req.ip] = (loginAttempts[req.ip] || 0) + 1;
 
     if (loginAttempts[req.ip] >= 3) {
-      await logAttack(req, email, "Brute Force Attack (3+ attempts)");
+      await logAttack(req, email, "Brute Force Attack");
     }
 
-    return res.json({ success: false, message: "Invalid credentials" });
+    return res.json({ success: false });
   }
 
   loginAttempts[req.ip] = 0;
-
-  res.json({ success: true, message: "Login successful!", username: user.username });
+  res.json({ success: true, username: user.username });
 });
 
 // ==============================
-// ADMIN SCAN TRAP
+// Admin Scan Trap
 // ==============================
 app.get(
   ["/admin", "/admin/login", "/phpmyadmin", "/wp-admin", "/.env", "/config", "/backup.zip"],
@@ -184,20 +204,18 @@ app.post("/admin-login", (req, res) => {
 // ADMIN DATA
 // ==============================
 app.get("/admin-data", async (req, res) => {
-
   const attacks = await Attack.find().sort({ time: -1 });
 
-  const total = attacks.length;
-  const sqlCount = attacks.filter(a => a.type.includes("SQL Injection")).length;
-  const xssCount = attacks.filter(a => a.type.includes("XSS Attack")).length;
-  const bruteCount = attacks.filter(a => a.type.includes("Brute Force")).length;
-  const adminScanCount = attacks.filter(a => a.type.includes("Admin Scan")).length;
-
-  res.json({ total, sqlCount, xssCount, bruteCount, adminScanCount, attacks });
+  res.json({
+    total: attacks.length,
+    sqlCount: attacks.filter(a => a.type.includes("SQL")).length,
+    xssCount: attacks.filter(a => a.type.includes("XSS")).length,
+    bruteCount: attacks.filter(a => a.type.includes("Brute")).length,
+    adminScanCount: attacks.filter(a => a.type.includes("Admin Scan")).length,
+    ddosCount: attacks.filter(a => a.type.includes("DDoS")).length,
+    attacks
+  });
 });
 
 const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
