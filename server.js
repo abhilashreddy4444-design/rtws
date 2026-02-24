@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const UAParser = require("ua-parser-js");
@@ -10,7 +9,6 @@ const axios = require("axios");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
 app.set("trust proxy", true);
 
@@ -18,7 +16,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 // ==============================
-// DDoS Detection System
+// DDoS Detection
 // ==============================
 let requestTracker = {};
 const REQUEST_LIMIT = 10;
@@ -28,12 +26,10 @@ app.use((req, res, next) => {
   const ip = req.ip;
   const now = Date.now();
 
-  if (!requestTracker[ip]) {
-    requestTracker[ip] = [];
-  }
+  if (!requestTracker[ip]) requestTracker[ip] = [];
 
   requestTracker[ip] = requestTracker[ip].filter(
-    timestamp => now - timestamp < TIME_WINDOW
+    t => now - t < TIME_WINDOW
   );
 
   requestTracker[ip].push(now);
@@ -71,9 +67,9 @@ const attackSchema = new mongoose.Schema({
   type: String,
   payload: String,
   browser: String,
-  browserVersion: String,   // ✅ NEW
+  browserVersion: String,
   os: String,
-  osVersion: String,        // ✅ NEW
+  osVersion: String,
   device: String,
   country: String,
   time: { type: Date, default: Date.now }
@@ -88,7 +84,12 @@ const Attack = mongoose.model("Attack", attackSchema);
 const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR 1=1|;)/i;
 const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
 
+// ==============================
+// Brute Force Settings
+// ==============================
 let loginAttempts = {};
+const BRUTE_LIMIT = 3;
+const BRUTE_WINDOW = 60 * 1000; // 1 minute
 
 // ==============================
 // Logger
@@ -98,12 +99,12 @@ async function logAttack(req, payload, type) {
   const ua = parser.getResult();
 
   const browser = ua.browser.name || "Unknown";
-  const browserVersion = ua.browser.version || "Unknown"; // ✅ NEW
+  const browserVersion = ua.browser.version || "Unknown";
 
   const os = ua.os.name || "Unknown";
-  const osVersion = ua.os.version || "Unknown"; // ✅ NEW
+  const osVersion = ua.os.version || "Unknown";
 
-  const device = ua.device.type === "mobile" ? "Mobile" : "Desktop";
+  const device = ua.device.type || "Desktop";
 
   let country = "Unknown";
 
@@ -118,9 +119,9 @@ async function logAttack(req, payload, type) {
     type,
     payload,
     browser,
-    browserVersion,   // ✅ SAVED
+    browserVersion,
     os,
-    osVersion,        // ✅ SAVED
+    osVersion,
     device,
     country
   }).save();
@@ -177,16 +178,29 @@ app.post("/login", async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    loginAttempts[req.ip] = (loginAttempts[req.ip] || 0) + 1;
+    const key = req.ip + "_" + email;
+    const now = Date.now();
 
-    if (loginAttempts[req.ip] >= 3) {
+    if (!loginAttempts[key]) {
+      loginAttempts[key] = { count: 0, firstAttempt: now };
+    }
+
+    if (now - loginAttempts[key].firstAttempt > BRUTE_WINDOW) {
+      loginAttempts[key] = { count: 0, firstAttempt: now };
+    }
+
+    loginAttempts[key].count++;
+
+    if (loginAttempts[key].count === BRUTE_LIMIT) {
       await logAttack(req, email, "Brute Force Attack");
     }
 
     return res.json({ success: false });
   }
 
-  loginAttempts[req.ip] = 0;
+  // Reset on successful login
+  delete loginAttempts[req.ip + "_" + email];
+
   res.json({ success: true, username: user.username });
 });
 
