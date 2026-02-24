@@ -42,7 +42,9 @@
         <th>IP</th>
         <th>Country</th>
         <th>Browser</th>
+        <th>Browser Version</th>
         <th>OS</th>
+        <th>OS Version</th>
         <th>Device</th>
         <th>URL</th>
         <th>Type</th>
@@ -95,7 +97,9 @@ async function loadAttacks(){
         <td>${a.ip}</td>
         <td>${a.country || "Unknown"}</td>
         <td>${a.browser || "Unknown"}</td>
+        <td>${a.browserVersion || "Unknown"}</td>
         <td>${a.os || "Unknown"}</td>
+        <td>${a.osVersion || "Unknown"}</td>
         <td>${a.device || "Desktop"}</td>
         <td>${a.url}</td>
         <td>${a.type}</td>
