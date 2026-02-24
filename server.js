@@ -11,50 +11,19 @@ const app = express();
 const server = http.createServer(app);
 
 app.set("trust proxy", true);
-
 app.use(express.json());
 app.use(express.static("public"));
 
-// ==============================
-// DDoS Detection
-// ==============================
-let requestTracker = {};
-const REQUEST_LIMIT = 10;
-const TIME_WINDOW = 10 * 1000;
-
-app.use((req, res, next) => {
-  const ip = req.ip;
-  const now = Date.now();
-
-  if (!requestTracker[ip]) requestTracker[ip] = [];
-
-  requestTracker[ip] = requestTracker[ip].filter(
-    t => now - t < TIME_WINDOW
-  );
-
-  requestTracker[ip].push(now);
-
-  if (requestTracker[ip].length > REQUEST_LIMIT) {
-    logAttack(req, "High request rate detected", "DDoS Attack");
-    return res.status(429).json({
-      success: false,
-      message: "Too many requests. Possible DDoS detected."
-    });
-  }
-
-  next();
-});
-
-// ==============================
-// MongoDB
-// ==============================
+/* ==============================
+   MongoDB
+============================== */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ MongoDB Error:", err));
 
-// ==============================
-// Schemas
-// ==============================
+/* ==============================
+   Schemas
+============================== */
 const userSchema = new mongoose.Schema({
   username: String,
   email: String,
@@ -78,22 +47,9 @@ const attackSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 const Attack = mongoose.model("Attack", attackSchema);
 
-// ==============================
-// Patterns
-// ==============================
-const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR 1=1|;)/i;
-const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=|<img)/i;
-
-// ==============================
-// Brute Force Protection
-// ==============================
-let loginAttempts = {};
-const BRUTE_LIMIT = 3;
-const BRUTE_WINDOW = 60 * 1000;
-
-// ==============================
-// Logger (Improved Version Detection)
-// ==============================
+/* ==============================
+   Attack Logger
+============================== */
 async function logAttack(req, payload, type) {
 
   const rawUA = req.headers["user-agent"] || "";
@@ -102,14 +58,11 @@ async function logAttack(req, payload, type) {
 
   const browser = ua.browser.name || "Unknown";
   const browserVersion = ua.browser.version || "Unknown";
-
   const os = ua.os.name || "Unknown";
   const osVersion = ua.os.version || "Unknown";
-
   const device = ua.device.type || "Desktop";
 
   let country = "Unknown";
-
   try {
     const response = await axios.get(`http://ip-api.com/json/${req.ip}`);
     country = response.data.country || "Unknown";
@@ -129,15 +82,86 @@ async function logAttack(req, payload, type) {
   }).save();
 }
 
-// ==============================
-// LOGIN
-// ==============================
+/* ==============================
+   DDoS Detection
+============================== */
+let requestTracker = {};
+const REQUEST_LIMIT = 10;
+const TIME_WINDOW = 10 * 1000;
+
+app.use((req, res, next) => {
+  const ip = req.ip;
+  const now = Date.now();
+
+  if (!requestTracker[ip]) requestTracker[ip] = [];
+
+  requestTracker[ip] = requestTracker[ip].filter(
+    t => now - t < TIME_WINDOW
+  );
+
+  requestTracker[ip].push(now);
+
+  if (requestTracker[ip].length > REQUEST_LIMIT) {
+    logAttack(req, "High request rate detected", "DDoS Attack");
+    return res.status(429).json({ success: false });
+  }
+
+  next();
+});
+
+/* ==============================
+   Patterns
+============================== */
+const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bDELETE\b|\bDROP\b|\bUPDATE\b|--|' OR 1=1|;)/i;
+const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=)/i;
+
+/* ==============================
+   Register
+============================== */
+app.post("/register", async (req, res) => {
+
+  const { username, email, password } = req.body;
+
+  if (sqlPattern.test(username) || sqlPattern.test(email) || sqlPattern.test(password)) {
+    await logAttack(req, JSON.stringify(req.body), "SQL Injection (Register)");
+    return res.json({ success: false });
+  }
+
+  if (xssPattern.test(username) || xssPattern.test(email)) {
+    await logAttack(req, JSON.stringify(req.body), "XSS Attack (Register)");
+    return res.json({ success: false });
+  }
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) return res.json({ success: false });
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await new User({ username, email, password: hashedPassword }).save();
+
+  res.json({ success: true });
+});
+
+/* ==============================
+   Brute Force
+============================== */
+let loginAttempts = {};
+const BRUTE_LIMIT = 3;
+const BRUTE_WINDOW = 60 * 1000;
+
+/* ==============================
+   Login
+============================== */
 app.post("/login", async (req, res) => {
 
   const { email, password } = req.body;
 
   if (sqlPattern.test(email) || sqlPattern.test(password)) {
     await logAttack(req, JSON.stringify(req.body), "SQL Injection (Login)");
+    return res.json({ success: false });
+  }
+
+  if (xssPattern.test(email)) {
+    await logAttack(req, JSON.stringify(req.body), "XSS Attack (Login)");
     return res.json({ success: false });
   }
 
@@ -174,12 +198,31 @@ app.post("/login", async (req, res) => {
 
   delete loginAttempts[req.ip + "_" + email];
 
-  res.json({ success: true, username: user.username });
+  res.json({ success: true });
 });
 
-// ==============================
-// ADMIN DATA
-// ==============================
+/* ==============================
+   Admin Scan Trap
+============================== */
+app.get(
+  ["/admin", "/admin/login", "/phpmyadmin", "/wp-admin", "/.env", "/config", "/backup.zip"],
+  async (req, res) => {
+    await logAttack(req, req.originalUrl, "Admin Scan Attack");
+    res.status(404).send("Not Found");
+  }
+);
+
+/* ==============================
+   Admin Login
+============================== */
+app.post("/admin-login", (req, res) => {
+  const enteredPassword = req.body.password;
+  res.json({ success: enteredPassword === process.env.ADMIN_PASSWORD });
+});
+
+/* ==============================
+   Admin Data
+============================== */
 app.get("/admin-data", async (req, res) => {
   const attacks = await Attack.find().sort({ time: -1 });
 
