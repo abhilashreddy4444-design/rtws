@@ -1,18 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard</title>
+  <title>Honeypot Admin Dashboard</title>
   <style>
-    body { font-family: Arial; background:#f4f4f4; padding:20px; }
-    h2 { text-align:center; }
-    #loginSection { text-align:center; margin-top:50px; }
-    input { padding:8px; width:220px; }
-    button { padding:8px 12px; cursor:pointer; }
-    #dashboard { display:none; margin-top:20px; }
-    .stats { text-align:center; font-weight:bold; margin-bottom:20px; font-size:18px; }
-    table { width:100%; border-collapse:collapse; background:white; }
-    th, td { padding:8px; border:1px solid #ccc; text-align:center; font-size:13px; }
-    th { background:#333; color:white; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    #loginSection {
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    input {
+      padding: 8px;
+      width: 220px;
+    }
+
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    #dashboard {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .stats {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    th {
+      background: #333;
+      color: white;
+    }
+
+    .danger {
+      color: red;
+      font-weight: bold;
+    }
+
   </style>
 </head>
 <body>
@@ -57,27 +107,30 @@
 </div>
 
 <script>
+
 async function login() {
+
   const password = document.getElementById("adminPass").value;
 
   const res = await fetch("/admin-login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ password })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
   });
 
   const result = await res.json();
 
-  if(result.success){
-    document.getElementById("loginSection").style.display="none";
-    document.getElementById("dashboard").style.display="block";
+  if (result.success) {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
     loadAttacks();
   } else {
     alert("Wrong Password");
   }
 }
 
-async function loadAttacks(){
+async function loadAttacks() {
+
   const res = await fetch("/admin-data");
   const data = await res.json();
 
@@ -89,9 +142,17 @@ async function loadAttacks(){
   document.getElementById("ddos").innerText = data.ddosCount;
 
   const tbody = document.getElementById("tbody");
-  tbody.innerHTML="";
+  tbody.innerHTML = "";
 
-  data.attacks.forEach(a=>{
+  data.attacks.forEach(a => {
+
+    let typeClass = "";
+
+    if (a.type.includes("SQL")) typeClass = "danger";
+    if (a.type.includes("Brute")) typeClass = "danger";
+    if (a.type.includes("DDoS")) typeClass = "danger";
+    if (a.type.includes("Admin Scan")) typeClass = "danger";
+
     tbody.innerHTML += `
       <tr>
         <td>${a.ip}</td>
@@ -102,12 +163,14 @@ async function loadAttacks(){
         <td>${a.osVersion || "Unknown"}</td>
         <td>${a.device || "Desktop"}</td>
         <td>${a.url}</td>
-        <td>${a.type}</td>
+        <td class="${typeClass}">${a.type}</td>
         <td>${a.payload}</td>
         <td>${new Date(a.time).toLocaleString()}</td>
-      </tr>`;
+      </tr>
+    `;
   });
 }
+
 </script>
 
 </body>
