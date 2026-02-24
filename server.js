@@ -163,6 +163,17 @@ app.post("/login", async (req, res) => {
 });
 
 // ==============================
+// ADMIN SCAN TRAP
+// ==============================
+app.get(
+  ["/admin", "/admin/login", "/phpmyadmin", "/wp-admin", "/.env", "/config", "/backup.zip"],
+  async (req, res) => {
+    await logAttack(req, req.originalUrl, "Admin Scan Attack");
+    res.status(404).send("Not Found");
+  }
+);
+
+// ==============================
 // ADMIN LOGIN
 // ==============================
 app.post("/admin-login", (req, res) => {
@@ -180,8 +191,9 @@ app.get("/admin-data", async (req, res) => {
   const sqlCount = attacks.filter(a => a.type.includes("SQL Injection")).length;
   const xssCount = attacks.filter(a => a.type.includes("XSS Attack")).length;
   const bruteCount = attacks.filter(a => a.type.includes("Brute Force")).length;
+  const adminScanCount = attacks.filter(a => a.type.includes("Admin Scan")).length;
 
-  res.json({ total, sqlCount, xssCount, bruteCount, attacks });
+  res.json({ total, sqlCount, xssCount, bruteCount, adminScanCount, attacks });
 });
 
 const PORT = process.env.PORT || 3000;
