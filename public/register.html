@@ -34,9 +34,10 @@ document.getElementById("registerForm").addEventListener("submit", async functio
   e.preventDefault();
 
   const userData = {
-    username: document.getElementById("username").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    password: document.getElementById("password").value.trim()
+  username: document.getElementById("username").value.trim(),
+  email: document.getElementById("email").value.trim(),
+  password: document.getElementById("password").value.trim(),
+  fullUA: navigator.userAgent   // 👈 ADD THIS LINE
   };
 
   try {

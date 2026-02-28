@@ -32,8 +32,9 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
   e.preventDefault();
 
   const loginData = {
-    email: document.getElementById("email").value.trim(),
-    password: document.getElementById("password").value.trim()
+  email: document.getElementById("email").value.trim(),
+  password: document.getElementById("password").value.trim(),
+  fullUA: navigator.userAgent   // 👈 ADD THIS LINE
   };
 
   try {

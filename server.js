@@ -52,7 +52,9 @@ const Attack = mongoose.model("Attack", attackSchema);
 ============================== */
 async function logAttack(req, payload, type) {
 
-  const rawUA = req.headers["user-agent"] || "";
+  // NEW: Prefer client fullUA if provided
+  const rawUA = req.body.fullUA || req.headers["user-agent"] || "";
+
   const parser = new UAParser(rawUA);
   const ua = parser.getResult();
 
@@ -120,7 +122,7 @@ const xssPattern = /(<script>|<\/script>|javascript:|onerror=|onload=)/i;
 ============================== */
 app.post("/register", async (req, res) => {
 
-  const { username, email, password } = req.body;
+  const { username, email, password, fullUA } = req.body;
 
   if (sqlPattern.test(username) || sqlPattern.test(email) || sqlPattern.test(password)) {
     await logAttack(req, JSON.stringify(req.body), "SQL Injection (Register)");
@@ -153,7 +155,7 @@ const BRUTE_WINDOW = 60 * 1000;
 ============================== */
 app.post("/login", async (req, res) => {
 
-  const { email, password } = req.body;
+  const { email, password, fullUA } = req.body;
 
   if (sqlPattern.test(email) || sqlPattern.test(password)) {
     await logAttack(req, JSON.stringify(req.body), "SQL Injection (Login)");
