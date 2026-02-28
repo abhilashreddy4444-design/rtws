@@ -150,6 +150,7 @@ async function loadAttacks() {
 
     if (a.type.includes("SQL")) typeClass = "danger";
     if (a.type.includes("Brute")) typeClass = "danger";
+    if (a.type.includes("XSS")) typeClass = "danger";
     if (a.type.includes("DDoS")) typeClass = "danger";
     if (a.type.includes("Admin Scan")) typeClass = "danger";
 
