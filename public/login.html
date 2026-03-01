@@ -34,8 +34,20 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
   const loginData = {
   email: document.getElementById("email").value.trim(),
   password: document.getElementById("password").value.trim(),
-  fullUA: navigator.userAgent   // 👈 ADD THIS LINE
-  };
+  fullUA: navigator.userAgent
+};
+
+// 🔥 ADD THIS PART FOR ACCURATE VERSION
+if (navigator.userAgentData) {
+  const hints = await navigator.userAgentData.getHighEntropyValues([
+    "platform",
+    "platformVersion",
+    "architecture",
+    "model",
+    "uaFullVersion"
+  ]);
+  loginData.clientHints = hints;
+  }
 
   try {
     const response = await fetch("/login", {

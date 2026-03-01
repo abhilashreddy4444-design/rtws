@@ -48,21 +48,40 @@ const User = mongoose.model("User", userSchema);
 const Attack = mongoose.model("Attack", attackSchema);
 
 /* ==============================
-   Attack Logger
+   Attack Logger (UPDATED)
 ============================== */
 async function logAttack(req, payload, type) {
 
-  // NEW: Prefer client fullUA if provided
-  const rawUA = req.body.fullUA || req.headers["user-agent"] || "";
+  let browser = "Unknown";
+  let browserVersion = "Unknown";
+  let os = "Unknown";
+  let osVersion = "Unknown";
+  let device = "Desktop";
 
-  const parser = new UAParser(rawUA);
-  const ua = parser.getResult();
+  // 🔥 1️⃣ If Client Hints available (Accurate)
+  if (req.body.clientHints) {
 
-  const browser = ua.browser.name || "Unknown";
-  const browserVersion = ua.browser.version || "Unknown";
-  const os = ua.os.name || "Unknown";
-  const osVersion = ua.os.version || "Unknown";
-  const device = ua.device.type || "Desktop";
+    const hints = req.body.clientHints;
+
+    browser = "Chromium";
+    browserVersion = hints.uaFullVersion || "Unknown";
+    os = hints.platform || "Unknown";
+    osVersion = hints.platformVersion || "Unknown";
+    device = hints.model || "Desktop";
+
+  } else {
+
+    // 🔥 2️⃣ Fallback to UAParser (Your Original Logic)
+    const rawUA = req.body.fullUA || req.headers["user-agent"] || "";
+    const parser = new UAParser(rawUA);
+    const ua = parser.getResult();
+
+    browser = ua.browser.name || "Unknown";
+    browserVersion = ua.browser.version || "Unknown";
+    os = ua.os.name || "Unknown";
+    osVersion = ua.os.version || "Unknown";
+    device = ua.device.type || "Desktop";
+  }
 
   let country = "Unknown";
   try {
