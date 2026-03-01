@@ -59,17 +59,34 @@ async function logAttack(req, payload, type) {
   let device = "Desktop";
 
   // 🔥 1️⃣ If Client Hints available (Accurate)
-  if (req.body.clientHints) {
+ if (req.body.clientHints) {
 
-    const hints = req.body.clientHints;
+  const hints = req.body.clientHints;
 
-    browser = "Chromium";
-    browserVersion = hints.uaFullVersion || "Unknown";
-    os = hints.platform || "Unknown";
-    osVersion = hints.platformVersion || "Unknown";
-    device = hints.model || "Desktop";
+  // Detect real browser name using fullUA
+  const rawUA = req.body.fullUA || "";
+  const parser = new UAParser(rawUA);
+  const ua = parser.getResult();
 
-  } else {
+  browser = ua.browser.name || "Unknown";
+  browserVersion = hints.uaFullVersion || ua.browser.version || "Unknown";
+
+  os = hints.platform || "Unknown";
+  osVersion = hints.platformVersion || "Unknown";
+  device = hints.model || "Desktop";
+
+  // Clean Windows version display
+  if (os === "Windows" && osVersion !== "Unknown") {
+    const majorVersion = parseInt(osVersion.split(".")[0]);
+
+    if (majorVersion >= 13) {
+      osVersion = "11";   // Windows 11
+    } else if (majorVersion === 10) {
+      osVersion = "10";   // Windows 10
+    }
+  }
+  }
+  else {
 
     // 🔥 2️⃣ Fallback to UAParser (Your Original Logic)
     const rawUA = req.body.fullUA || req.headers["user-agent"] || "";
